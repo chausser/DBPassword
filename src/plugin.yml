@@ -1,0 +1,8 @@
+name: DBPassword
+main: me.chausser.dbpassword.DBPassword
+version: 0.1
+
+commands:
+    dbp:
+        description: Set/Update website account password
+        usage: /dbp [password]
