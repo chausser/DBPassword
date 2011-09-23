@@ -1,8 +1,28 @@
 name: DBPassword
 main: me.chausser.dbpassword.DBPassword
-version: 0.1
+version: 0.2
+database: true
 
 commands:
     dbp:
-        description: Set/Update website account password
-        usage: /dbp [password]
+        description: Used to set / update your password or to reload the config file
+        usage: |
+            /dbp set [password] -- Sets your password
+            /dbp update [password] -- Updates your password
+            /dbp reload -- Reloads the config file
+permissions:
+    dbp.*:
+        description: Allows access to all commands
+        children:
+          dbp.set: true
+          dbp.update: true
+          dbp.reload: true
+    dbp.set:
+        description: Allows setting of website account password
+        default: true
+    dbp.update:
+        description: Allows updating of website account password
+        default: true
+    dbp.reload:
+        description: Allows reloading of the config file
+        default: op
