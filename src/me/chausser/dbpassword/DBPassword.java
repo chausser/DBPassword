@@ -21,7 +21,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
+// org.bukkit.plugin.PluginManager;
 //import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
@@ -108,6 +108,11 @@ public class DBPassword extends JavaPlugin {
                         sender.sendMessage("[DBPassword] Failed to Reload Configuration.");
                     }
                 }
+                else{
+                    player.sendMessage("Use /dbp set [password] - to set your password.");
+                    player.sendMessage("Use /dbp update [password] - to update your password.");
+                    player.sendMessage("Use /dbp reload - reloads the config"); 
+                }
             }
             if (args.length == 2) {
                 if(args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("update")){
@@ -158,12 +163,19 @@ public class DBPassword extends JavaPlugin {
                         }
                     }
                 }
+                else{
+                    player.sendMessage("Use /dbp set [password] - to set your password.");
+                    player.sendMessage("Use /dbp update [password] - to update your password.");
+                    player.sendMessage("Use /dbp reload - reloads the config"); 
+                }
             }
             if (args.length == 0) {
                 if (player == null) {
                     sender.sendMessage("[DBPassword] this command is used in game to allow a player to set / update his or her password in the database");
                 } else {
-                    player.sendMessage("Use /dbp [password] to set or update your password.");
+                    player.sendMessage("Use /dbp set [password] - to set your password.");
+                    player.sendMessage("Use /dbp update [password] - to update your password.");
+                    player.sendMessage("Use /dbp reload - reloads the config"); 
                 }
             }
             return true;
