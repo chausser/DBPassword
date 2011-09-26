@@ -188,14 +188,14 @@ public class DBPassword extends JavaPlugin {
         if (!yml.exists()) {
             log.info("[DBPassword] Didnt find the config file, buidling default values");
             config = getConfiguration();
-            config.setProperty("mysql.host", "'localhost'");
-            config.setProperty("mysql.port", "'3306'");
-            config.setProperty("mysql.database", "'minecraft'");
-            config.setProperty("mysql.table", "'users'");
+            config.setProperty("mysql.host", "localhost");
+            config.setProperty("mysql.port", "3306");
+            config.setProperty("mysql.database", "minecraft");
+            config.setProperty("mysql.table", "users");
             config.setProperty("mysql.user", "'root'");
-            config.setProperty("mysql.password", "''");
-            config.setProperty("security.encryption", "'MD5 or SHA1'");
-            config.setProperty("security.salt", "'s0m3 s@lT StriNg'");
+            config.setProperty("mysql.password", "");
+            config.setProperty("security.encryption", "MD5 or SHA1");
+            config.setProperty("security.salt", "s0m3 s@lT StriNg");
             config.save();
             return false;
         } else {
