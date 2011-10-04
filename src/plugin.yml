@@ -1,6 +1,6 @@
 name: DBPassword
 main: me.chausser.dbpassword.DBPassword
-version: 0.3
+version: 0.4
 database: false
 
 commands:
