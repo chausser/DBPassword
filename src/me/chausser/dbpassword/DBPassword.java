@@ -94,7 +94,7 @@ public class DBPassword extends JavaPlugin {
         if (cmd.getName().equalsIgnoreCase("dbp")) {
             if (args.length == 1) {
                 if(args[0].equalsIgnoreCase("reload")){
-                    if (!permissionHandler.has(player, "dbp.reload")) {
+                    if (!this.checkPlayerHasPermission(player, "dbp.reload")) {
                         player.sendMessage("Error: You do not have permission.");
                         return true;
                     }
@@ -116,7 +116,7 @@ public class DBPassword extends JavaPlugin {
             }
             if (args.length == 2) {
                 if(args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("update")){
-                    if (!permissionHandler.has(player, "dbp.set") || !permissionHandler.has(player, "dbp.update")) {
+                    if (!this.checkPlayerHasPermission(player, "dbp.set") || !this.checkPlayerHasPermission(player, "dbp.update")) {
                         player.sendMessage("Error: You do not have permission.");
                         return true;
                     }
@@ -237,6 +237,17 @@ public class DBPassword extends JavaPlugin {
 
         permissionHandler = ((Permissions) permissionsPlugin).getHandler();
         this.log.info("[DBPassword] Found and will use the permission plugin " + ((Permissions) permissionsPlugin).getDescription().getFullName());
+    }
+    
+    private boolean checkPlayerHasPermission(Player player, String permissionNode){
+        if(player.hasPermission(permissionNode)){
+            return true;
+        }
+        if(permissionHandler.has(player, permissionNode)){
+            return true;
+        }
+        
+        return false;
     }
 
     private static String convertToHex(byte[] data) {
