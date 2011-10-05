@@ -1,6 +1,7 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ *
+ * @author Chausser
+ * @server mcserver.nkings.com
  */
 package me.chausser.dbpassword;
 
@@ -21,15 +22,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-// org.bukkit.plugin.PluginManager;
-//import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.config.Configuration;
 
-/**
- *
- * @author Chase
- */
+
 public class DBPassword extends JavaPlugin {
 
     String db_host = null;
@@ -41,21 +37,30 @@ public class DBPassword extends JavaPlugin {
     String sec_encrypt = null;
     String sec_salt = null;
     Connection conn = null;
+    String plug_config_ver = null;
+    String plug_actual_ver = null;
     Statement stmt = null;
     boolean dbConnSuccess = false;
     Logger log = Logger.getLogger("Minecraft");
     protected static Configuration config;
     public static PermissionHandler permissionHandler;
 
+    @Override
     public void onEnable() {
         log.info("[DBPassword] Initalizing Plugin");
         setupPermissions();
-        if (!this.loadConfig()) {
+        PluginDescriptionFile pdfFile = getDescription();
+        if (!this.loadConfig(pdfFile.getVersion())) {
             log.info("[DBPassword] First time setup, Disabling plugin to allow for value changes in config file");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
+        this.plug_actual_ver = pdfFile.getVersion();
+        
+        if(!this.plug_actual_ver.equals(plug_config_ver)){
+            this.runUpdateProcedures(plug_actual_ver);
+        }
+        
         try {
             this.conn = DriverManager.getConnection("jdbc:mysql://" + this.db_host + ":" + this.db_port + "/" + this.db_name + "?user=" + this.db_user + "&password=" + this.db_pass);
             this.stmt = this.conn.createStatement();
@@ -70,11 +75,11 @@ public class DBPassword extends JavaPlugin {
         }
         //PluginManager pm = this.getServer().getPluginManager();
 
-        PluginDescriptionFile pdfFile = getDescription();
-
+        
         this.log.info("[" + pdfFile.getName() + "]" + " version " + pdfFile.getVersion() + " is enabled!");
     }
-
+    
+    @Override
     public void onDisable() {
         log.info("[DBPassword] has been disabled.");
     }
@@ -98,7 +103,7 @@ public class DBPassword extends JavaPlugin {
                         player.sendMessage("Error: You do not have permission.");
                         return true;
                     }
-                    boolean reload = this.loadConfig();
+                    boolean reload = this.loadConfig(this.plug_config_ver);
                     if(reload){
                         this.log.info("[DBPassword] Configuration Reloaded.");
                         sender.sendMessage("[DBPassword] Configuration Reloaded.");
@@ -125,9 +130,9 @@ public class DBPassword extends JavaPlugin {
                     } else {
                         String passString = this.sec_salt + args[1];
                         String passHash = null;
-                        if (this.sec_encrypt.equalsIgnoreCase("MD5")) {
+                        if (this.sec_encrypt.equalsIgnoreCase("md5")) {
                             passHash = this.MD5(passString);
-                        } else if (this.sec_encrypt.equalsIgnoreCase("SHA1")) {
+                        } else if (this.sec_encrypt.equalsIgnoreCase("sha1")) {
                             passHash = this.SHA1(passString);
                         } else {
                             //assume md5
@@ -183,7 +188,7 @@ public class DBPassword extends JavaPlugin {
         return false;
     }
 
-    private boolean loadConfig() {
+    private boolean loadConfig(String currentVersion) {
         File yml = new File("plugins/DBPassword/config.yml");
         if (!yml.exists()) {
             log.info("[DBPassword] Didnt find the config file, buidling default values");
@@ -196,6 +201,7 @@ public class DBPassword extends JavaPlugin {
             config.setProperty("mysql.password", "");
             config.setProperty("security.encryption", "MD5 or SHA1");
             config.setProperty("security.salt", "s0m3 s@lT StriNg");
+            config.setProperty("plugin.version", currentVersion);
             config.save();
             return false;
         } else {
@@ -208,18 +214,8 @@ public class DBPassword extends JavaPlugin {
             this.db_pass = config.getString("mysql.password", "");
             this.sec_encrypt = config.getString("security.encryption", "MD5");
             this.sec_salt = config.getString("security.salt", "");
+            this.plug_config_ver = config.getString("plugin.version", "");
             
-            /*
-            Debugging Info
-            log.info("[DBPassword] Host:" + this.db_host); 
-            log.info("[DBPassword] port:" + this.db_port);
-            log.info("[DBPassword] database:" + this.db_name);
-            log.info("[DBPassword] table:" + this.db_tabl);
-            log.info("[DBPassword] user:" + this.db_user);
-            log.info("[DBPassword] password:" + this.db_pass);
-            log.info("[DBPassword] encryption:" + this.sec_encrypt);
-            log.info("[DBPassword] salt:" + this.sec_salt);
-             */
             return true;
         }
     }
@@ -304,5 +300,37 @@ public class DBPassword extends JavaPlugin {
             hexString.append(hex);
         }
         return hexString.toString();
+    }
+
+    private boolean runUpdateProcedures(String plug_actual_ver) {
+        if(this.plug_config_ver.equals(plug_actual_ver)){
+            return true;
+        }
+        else{
+            String[] plug_major_minor = plug_config_ver.split(",");
+            
+            
+            
+            //this.log.info("[DBPassword] Successfully updated from version "+ plug_ver +" to version "+ pdfFile.getVersion());
+        }
+        return false;
+    }
+    
+    /*** UPDATE FUNCTIONS ***/
+    
+    private void majorVer0MinorVer1(){
+        
+    }
+    private void majorVer0MinorVer2(){
+        
+    }
+    private void majorVer0MinorVer3(){
+        
+    }
+    private void majorVer0MinorVer4(){
+        
+    }
+    private void majorVer0MinorVer5(){
+        
     }
 }
