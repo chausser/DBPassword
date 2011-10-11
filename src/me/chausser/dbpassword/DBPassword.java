@@ -9,7 +9,6 @@ import java.io.File;
 import java.util.logging.Logger;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import com.nijiko.permissions.PermissionHandler;
@@ -17,13 +16,10 @@ import com.nijikokun.bukkit.Permissions.Permissions;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.config.Configuration;
 
 
 public class DBPassword extends JavaPlugin {
@@ -42,8 +38,8 @@ public class DBPassword extends JavaPlugin {
     Statement stmt = null;
     boolean dbConnSuccess = false;
     Logger log = Logger.getLogger("Minecraft");
-    protected static Configuration config;
     public static PermissionHandler permissionHandler;
+    private DBPasswordCommandExecutor myExecutor;
 
     @Override
     public void onEnable() {
@@ -56,11 +52,11 @@ public class DBPassword extends JavaPlugin {
             return;
         }
         this.plug_actual_ver = pdfFile.getVersion();
-        
+
         if(!this.plug_actual_ver.equals(plug_config_ver)){
             this.runUpdateProcedures(plug_actual_ver);
         }
-        
+
         try {
             this.conn = DriverManager.getConnection("jdbc:mysql://" + this.db_host + ":" + this.db_port + "/" + this.db_name + "?user=" + this.db_user + "&password=" + this.db_pass);
             this.stmt = this.conn.createStatement();
@@ -75,152 +71,40 @@ public class DBPassword extends JavaPlugin {
         }
         //PluginManager pm = this.getServer().getPluginManager();
 
-        
+        myExecutor = new DBPasswordCommandExecutor(this);
+	getCommand("dbp").setExecutor(myExecutor);
+
         this.log.info("[" + pdfFile.getName() + "]" + " version " + pdfFile.getVersion() + " is enabled!");
     }
-    
+
     @Override
     public void onDisable() {
         log.info("[DBPassword] has been disabled.");
     }
 
-    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
-        Player player = null;
-        if (sender instanceof Player) {
-            player = (Player) sender;
-        }
-        
-        if (!this.dbConnSuccess) {
-            //shouldnt be able to get here but just in case
-            player.sendMessage("Error: Cannot connect to the database to save your password, Try again later.");
-            return true;
-        }
-
-        if (cmd.getName().equalsIgnoreCase("dbp")) {
-            if (args.length == 1) {
-                if(args[0].equalsIgnoreCase("reload")){
-                    if (!this.checkPlayerHasPermission(player, "dbp.reload")) {
-                        player.sendMessage("Error: You do not have permission.");
-                        return true;
-                    }
-                    boolean reload = this.loadConfig(this.plug_config_ver);
-                    if(reload){
-                        this.log.info("[DBPassword] Configuration Reloaded.");
-                        sender.sendMessage("[DBPassword] Configuration Reloaded.");
-                    }
-                    else{
-                        this.log.info("[DBPassword] Failed to Reload Configuration.");
-                        sender.sendMessage("[DBPassword] Failed to Reload Configuration.");
-                    }
-                }
-                else{
-                    player.sendMessage("Use /dbp set [password] - to set your password.");
-                    player.sendMessage("Use /dbp update [password] - to update your password.");
-                    player.sendMessage("Use /dbp reload - reloads the config"); 
-                }
-            }
-            if (args.length == 2) {
-                if(args[0].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("update")){
-                    if (!this.checkPlayerHasPermission(player, "dbp.set") || !this.checkPlayerHasPermission(player, "dbp.update")) {
-                        player.sendMessage("Error: You do not have permission.");
-                        return true;
-                    }
-                    if (player == null) {
-                        sender.sendMessage("[DBPassword] this command can only be run by a player");
-                    } else {
-                        String passString = this.sec_salt + args[1];
-                        String passHash = null;
-                        if (this.sec_encrypt.equalsIgnoreCase("md5")) {
-                            passHash = this.MD5(passString);
-                        } else if (this.sec_encrypt.equalsIgnoreCase("sha1")) {
-                            passHash = this.SHA1(passString);
-                        } else {
-                            //assume md5
-                            this.log.info("[DBPassword] Unable to determine the encryption type assuming md5.");
-                            passHash = this.MD5(passString);
-                        }
-                        try {
-                            this.stmt = this.conn.createStatement();
-                            ResultSet rs = this.stmt.executeQuery("SELECT * FROM " + this.db_tabl + " WHERE username = '" + player.getName() + "'");
-                            if (!rs.first()) {
-                                try {
-                                    this.stmt = this.conn.createStatement();
-                                    this.stmt.execute("INSERT INTO " + this.db_tabl + "(`id`, `username`, `password`) VALUES(null, '" + player.getName() + "', '" + passHash + "')");
-                                    player.sendMessage("[DBPassword] Your password has been succesfully set.");
-                                    this.log.info("[DBPassword] " + player.getDisplayName() + " has set his/her password.");
-                                } catch (SQLException e) {
-                                    this.log.info("[DBPassword] " + e.toString());
-                                    player.sendMessage("[DBPassword] Error: Could not connect to database.");
-                                }
-                            } else {
-                                try {
-                                    this.stmt = this.conn.createStatement();
-                                    this.stmt.execute("UPDATE `" + this.db_tabl + "` SET `password` = '" + passHash + "' WHERE `username` = '" + player.getName() + "'");
-                                    player.sendMessage("[DBPassword] Your password has been succesfully updated.");
-                                    this.log.info("[DBPassword] " + player.getDisplayName() + " has updated his/her password.");
-                                } catch (SQLException e) {
-                                    this.log.info("[DBPassword] " + e.toString());
-                                    player.sendMessage("[DBPassword] Error: Could not connect to database.");
-                                }
-                            }
-                        } catch (SQLException e) {
-                            this.log.info(e.toString());
-                        }
-                    }
-                }
-                else{
-                    player.sendMessage("Use /dbp set [password] - to set your password.");
-                    player.sendMessage("Use /dbp update [password] - to update your password.");
-                    player.sendMessage("Use /dbp reload - reloads the config"); 
-                }
-            }
-            if (args.length == 0) {
-                if (player == null) {
-                    sender.sendMessage("[DBPassword] this command is used in game to allow a player to set / update his or her password in the database");
-                } else {
-                    player.sendMessage("Use /dbp set [password] - to set your password.");
-                    player.sendMessage("Use /dbp update [password] - to update your password.");
-                    player.sendMessage("Use /dbp reload - reloads the config"); 
-                }
-            }
-            return true;
-        }
-        return false;
-    }
-
-    private boolean loadConfig(String currentVersion) {
+    public boolean loadConfig(String currentVersion) {
         File yml = new File("plugins/DBPassword/config.yml");
         if (!yml.exists()) {
             log.info("[DBPassword] Didnt find the config file, buidling default values");
-            config = getConfiguration();
-            config.setProperty("mysql.host", "localhost");
-            config.setProperty("mysql.port", "3306");
-            config.setProperty("mysql.database", "minecraft");
-            config.setProperty("mysql.table", "users");
-            config.setProperty("mysql.user", "'root'");
-            config.setProperty("mysql.password", "");
-            config.setProperty("security.encryption", "MD5 or SHA1");
-            config.setProperty("security.salt", "s0m3 s@lT StriNg");
-            config.setProperty("plugin.version", currentVersion);
-            config.save();
+            getConfig().options().copyDefaults(true);
+            saveConfig();
             return false;
         } else {
-            config = getConfiguration();
-            this.db_host = config.getString("mysql.host", "localhost");
-            this.db_port = config.getString("mysql.port", "3306");
-            this.db_name = config.getString("mysql.database", "minecraft");
-            this.db_tabl = config.getString("mysql.table", "users");
-            this.db_user = config.getString("mysql.user", "root");
-            this.db_pass = config.getString("mysql.password", "");
-            this.sec_encrypt = config.getString("security.encryption", "MD5");
-            this.sec_salt = config.getString("security.salt", "");
-            this.plug_config_ver = config.getString("plugin.version", "");
-            
+            this.db_host = getConfig().getString("mysql.host");
+            this.db_port = getConfig().getString("mysql.port");
+            this.db_name = getConfig().getString("mysql.database");
+            this.db_tabl = getConfig().getString("mysql.table");
+            this.db_user = getConfig().getString("mysql.user");
+            this.db_pass = getConfig().getString("mysql.password");
+            this.sec_encrypt = getConfig().getString("security.encryption");
+            this.sec_salt = getConfig().getString("security.salt");
+            this.plug_config_ver = getConfig().getString("plugin.version");
+
             return true;
         }
     }
 
-    private void setupPermissions() {
+    public void setupPermissions() {
         if (permissionHandler != null) {
             return;
         }
@@ -234,19 +118,19 @@ public class DBPassword extends JavaPlugin {
         permissionHandler = ((Permissions) permissionsPlugin).getHandler();
         this.log.info("[DBPassword] Found and will use the permission plugin " + ((Permissions) permissionsPlugin).getDescription().getFullName());
     }
-    
-    private boolean checkPlayerHasPermission(Player player, String permissionNode){
+
+    public boolean checkPlayerHasPermission(Player player, String permissionNode){
         if(player.hasPermission(permissionNode)){
             return true;
         }
         if(permissionHandler.has(player, permissionNode)){
             return true;
         }
-        
+
         return false;
     }
 
-    private static String convertToHex(byte[] data) {
+    public static String convertToHex(byte[] data) {
         StringBuffer buf = new StringBuffer();
         for (int i = 0; i < data.length; i++) {
             int halfbyte = (data[i] >>> 4) & 0x0F;
@@ -308,29 +192,29 @@ public class DBPassword extends JavaPlugin {
         }
         else{
             String[] plug_major_minor = plug_config_ver.split(",");
-            
-            
-            
+
+
+
             //this.log.info("[DBPassword] Successfully updated from version "+ plug_ver +" to version "+ pdfFile.getVersion());
         }
         return false;
     }
-    
+
     /*** UPDATE FUNCTIONS ***/
-    
+
     private void majorVer0MinorVer1(){
-        
+
     }
     private void majorVer0MinorVer2(){
-        
+
     }
     private void majorVer0MinorVer3(){
-        
+
     }
     private void majorVer0MinorVer4(){
-        
+
     }
     private void majorVer0MinorVer5(){
-        
+
     }
 }

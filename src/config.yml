@@ -1,0 +1,16 @@
+## YAML Template.
+plugin:
+  version: '0.5'
+mysql:
+    host: 'localhost'
+    port: '3306'
+    database: 'minecraft'
+    table: 'users'
+    user: 'root'
+    password: ''
+security:
+    ## Encryption Supports md5 or sha1
+    encryption: 'md5'
+    ## If you dont want to use a security salt then leave this blank
+    salt: 's0m3 s@lT StriNg'
+
